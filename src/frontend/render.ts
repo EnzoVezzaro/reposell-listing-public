@@ -59,10 +59,37 @@ export function renderCatalogPage(listings: FederatedListing[], errors: string[]
 <head><meta charset="utf-8"><title>reposell listing</title></head>
 <body>
 <h1>reposell listing</h1>
-<ul>
+<ul id="catalog-list">
 ${rows}
 </ul>
 ${errors.length > 0 ? `<ul class="errors">\n${errorNotes}\n</ul>` : ''}
+<script>
+(function() {
+  'use strict';
+  const listEl = document.getElementById('catalog-list');
+  if (!listEl) return;
+  fetch('/federation/v1/snapshot.json')
+    .then((res) => { if (!res.ok) throw new Error('failed to fetch snapshot'); return res.json(); })
+    .then((data) => {
+      const listings = (data && data.listings) || [];
+      listEl.innerHTML = listings.map((listing) => {
+        const repo = listing.product && listing.product.repository;
+        const rel = listing.product && listing.product.release;
+        if (!repo) return '';
+        const a = document.createElement('a');
+        a.href = './product/' + repo + '.html';
+        a.textContent = repo;
+        const li = document.createElement('li');
+        li.appendChild(a);
+        li.appendChild(document.createTextNode(' — ' + (rel || '')));
+        return li.innerHTML;
+      }).join('');
+    })
+    .catch((err) => {
+      console.error('Failed to fetch snapshot:', err);
+    });
+})();
+</script>
 </body>
 </html>
 `;
